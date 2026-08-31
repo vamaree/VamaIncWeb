@@ -1,0 +1,45 @@
+name: Apply approved Vama hero
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/apply-approved-hero.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-live-page:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout live Pages branch
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Replace hero with approved image
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          approved = 'https://ntbaqczdutyekggnisuw.supabase.co/storage/v1/object/public/vama-public/hero-approved.jpg?v=1'
+          s = re.sub(r'<img class="heroImage" src="[^"]+" alt="[^"]*"\s*/?>', f'<img class="heroImage" src="{approved}" alt="Vama Inc professional team" />', s, count=1)
+          p.write_text(s, encoding='utf-8')
+          PY
+
+      - name: Publish change
+        run: |
+          git config user.name "vamaree"
+          git config user.email "vamaree@gmail.com"
+          git add index.html
+          if git diff --cached --quiet; then
+            echo "No change needed"
+          else
+            git commit -m "Use approved Vama hero image"
+            git push origin gh-pages
+          fi
