@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.InputType;
 import android.view.View;
@@ -15,6 +16,7 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 
 import java.util.Locale;
+import java.security.MessageDigest;
 
 public class MainActivity extends Activity {
     private static final int GREEN = Color.rgb(16,59,42);
@@ -83,25 +85,66 @@ public class MainActivity extends Activity {
     }
 
     private void showDashboard(){
-        shell("Final Pilot – Wealth Operating System");
-        body.addView(card("BUILD 4","Research • Compare • X-Ray • Simulate • Stress • Explain • Report • Share • Track"));
-        module("Wealth Cockpit","One-screen portfolio health and scenario snapshot.",()->wealthCockpit());
-        module("5-Year Fund Compare","Fund A vs Fund B vs Nifty with ROI, risk, drawdown and expense.",()->fundCompare());
-        module("NIFTY UP / DOWN MATRIX","-20% to +20% Nifty moves with portfolio ₹ and % impact.",()->niftyMatrix());
-        module("Portfolio X-Ray","Top-5 concentration, HHI and underlying exposure proxy.",()->xray());
-        module("Digital Twin","Current vs target allocation over a chosen horizon.",()->digitalTwin());
-        module("Goals / SIP / Step-Up","SIP + lump sum + annual step-up illustration.",()->goals());
-        module("Client Impact Radar","Translate a market move into one client's portfolio impact.",()->clientImpact());
-        module("Market Cockpit","Nifty change, FII/DII, gold and USD/INR from entered verified values.",()->marketCockpit());
-        module("What Changed?","Allocation, expense and AUM before/after detector.",()->whatChanged());
-        module("Evidence Mode","Source → Date → Calculation → Explanation.",()->evidence());
-        module("Report Factory","Generate and share an advisor-ready text report.",()->reports());
-        module("Lead & Follow-Up","Store a simple local follow-up record and count.",()->followup());
-        module("Share Studio","Create and share branded client communication text.",()->shareStudio());
-        module("Smart URL","Share report or website links from Android.",()->smartUrl());
-        module("Super Admin","Build status, data status and local reset controls.",()->superAdmin());
+        shell("Vama Wealth Intelligence – Core v1.0");
+        body.addView(card("BUILD 5 • EXTENSIBLE CORE","Research • Compare • X-Ray • Simulate • Stress • Explain • Report • Share • Track • Extend"));
+        if(enabled("cockpit")) module("Wealth Cockpit","One-screen portfolio health and scenario snapshot.",()->wealthCockpit());
+        if(enabled("compare")) module("5-Year Fund Compare","Fund A vs Fund B vs Nifty with ROI, risk, drawdown and expense.",()->fundCompare());
+        if(enabled("nifty")) module("NIFTY UP / DOWN MATRIX","-20% to +20% Nifty moves with portfolio ₹ and % impact.",()->niftyMatrix());
+        if(enabled("xray")) module("Portfolio X-Ray","Top-5 concentration, HHI and underlying exposure proxy.",()->xray());
+        if(enabled("twin")) module("Digital Twin","Current vs target allocation over a chosen horizon.",()->digitalTwin());
+        if(enabled("goals")) module("Goals / SIP / Step-Up","SIP + lump sum + annual step-up illustration.",()->goals());
+        if(enabled("impact")) module("Client Impact Radar","Translate a market move into one client portfolio impact.",()->clientImpact());
+        if(enabled("market")) module("Market Cockpit","Nifty change, FII/DII, gold and USD/INR from entered verified values.",()->marketCockpit());
+        if(enabled("changed")) module("What Changed?","Allocation, expense and AUM before/after detector.",()->whatChanged());
+        if(enabled("evidence")) module("Evidence Mode","Source → Date → Calculation → Explanation.",()->evidence());
+        if(enabled("reports")) module("Report Factory","Generate and share an advisor-ready text report.",()->reports());
+        if(enabled("follow")) module("Lead & Follow-Up","Store a simple local follow-up record and count.",()->followup());
+        if(enabled("share")) module("Share Studio","Create and share branded client communication text.",()->shareStudio());
+        if(enabled("url")) module("Smart URL","Share report or website links from Android.",()->smartUrl());
+        addCustomModulesToDashboard();
+        module("Super Admin","Password-protected feature manager, competitor benchmark and module extension.",()->superAdmin());
         TextView n=t("Live NAV, AMC holdings and market feeds are not fabricated. Until verified feeds are connected, data-entry fields expect real values supplied by the user/advisor.",12,false);
         n.setTextColor(RED); body.addView(n);
+    }
+
+    private boolean enabled(String key){
+        return prefs.getBoolean("feature_"+key,true);
+    }
+
+    private String hash(String value){
+        try{
+            MessageDigest md=MessageDigest.getInstance("SHA-256");
+            byte[] b=md.digest(value.getBytes("UTF-8"));
+            StringBuilder out=new StringBuilder();
+            for(byte x:b) out.append(String.format(Locale.US,"%02x",x & 0xff));
+            return out.toString();
+        }catch(Exception e){ return value; }
+    }
+
+    private EditText passwordInput(String hint){
+        EditText e=txt(hint);
+        e.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        return e;
+    }
+
+    private void openWeb(String url){
+        try{
+            String u=url.trim();
+            if(!u.startsWith("http://")&&!u.startsWith("https://"))u="https://"+u;
+            startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(u)));
+        }catch(Exception ignored){}
+    }
+
+    private void addCustomModulesToDashboard(){
+        String all=prefs.getString("custom_modules","");
+        if(all.trim().length()==0)return;
+        String[] rows=all.split("\\n");
+        for(String row:rows){
+            String[] p=row.split("\\|",-1);
+            if(p.length<3)continue;
+            final String name=p[0], desc=p[1], url=p[2];
+            module(name,desc,()->openWeb(url));
+        }
     }
 
     private void wealthCockpit(){
@@ -328,12 +371,87 @@ public class MainActivity extends Activity {
 
     private void superAdmin(){
         shell("Super Admin"); back();
-        body.addView(card("Version","Vama Wealth Intelligence Build 4 • Final Pilot • Android 6/API 23+"));
-        body.addView(card("Live verified MF/NAV/AMC feeds","Pending connection"));
-        body.addView(card("Local follow-ups",String.valueOf(prefs.getInt("follow_count",0))));
-        Button reset=btn("Reset local app data"); TextView out=t("",14,false);
-        reset.setOnClickListener(x->{prefs.edit().clear().apply();out.setText("Local Vama data reset.");});
-        body.addView(reset);body.addView(out);
+        String stored=prefs.getString("admin_hash","");
+        EditText pass=passwordInput(stored.length()==0?"Create Super Admin password":"Enter Super Admin password");
+        TextView out=t("",14,false);
+        Button enter=btn(stored.length()==0?"Create password & open admin":"Unlock Super Admin");
+        enter.setOnClickListener(x->{
+            String p=pass.getText().toString();
+            if(p.length()<4){out.setText("Use at least 4 characters.");return;}
+            String h=hash(p);
+            String now=prefs.getString("admin_hash","");
+            if(now.length()==0){
+                prefs.edit().putString("admin_hash",h).apply();
+                showAdminPanel();
+            }else if(now.equals(h)){
+                showAdminPanel();
+            }else out.setText("Incorrect Super Admin password.");
+        });
+        body.addView(pass);body.addView(enter);body.addView(out);
+    }
+
+    private void showAdminPanel(){
+        shell("Super Admin • Feature Manager"); back();
+        body.addView(card("Version","Vama Wealth Intelligence Build 5 • Extensible Core • Android 6/API 23+"));
+        body.addView(card("Extension model","Native modules can be enabled/disabled here. New web/Firebase/Railway modules can be added by URL without rebuilding the APK."));
+        body.addView(card("Native-code limitation","A brand-new native Android capability still requires an APK update. Super Admin cannot safely create new compiled native code by password alone."));
+
+        TextView status=t("Use the buttons below to switch native modules ON/OFF.",15,true);
+        body.addView(status);
+        String[][] features={
+            {"cockpit","Wealth Cockpit"},{"compare","5-Year Fund Compare"},{"nifty","Nifty Matrix"},{"xray","Portfolio X-Ray"},
+            {"twin","Digital Twin"},{"goals","Goals / SIP / Step-Up"},{"impact","Client Impact Radar"},{"market","Market Cockpit"},
+            {"changed","What Changed?"},{"evidence","Evidence Mode"},{"reports","Report Factory"},{"follow","Lead & Follow-Up"},
+            {"share","Share Studio"},{"url","Smart URL"}
+        };
+        for(String[] f:features){
+            final String key=f[0], label=f[1];
+            Button b=btn(label+" — "+(enabled(key)?"ON":"OFF"));
+            b.setOnClickListener(v->{
+                boolean next=!enabled(key);
+                prefs.edit().putBoolean("feature_"+key,next).apply();
+                showAdminPanel();
+            });
+            body.addView(b);
+        }
+
+        body.addView(t("ADD NEW MODULE WITHOUT APK REBUILD",18,true));
+        EditText name=txt("Module name");
+        EditText desc=txt("Short description");
+        EditText url=txt("HTTPS URL / Firebase / Railway page");
+        TextView moduleOut=t("",14,false);
+        Button add=btn("Add module to dashboard");
+        add.setOnClickListener(v->{
+            String n=name.getText().toString().replace("|","/").replace("\n"," ").trim();
+            String d=desc.getText().toString().replace("|","/").replace("\n"," ").trim();
+            String u=url.getText().toString().replace("|","").replace("\n","").trim();
+            if(n.length()==0||u.length()==0){moduleOut.setText("Enter module name and URL.");return;}
+            String row=n+"|"+d+"|"+u;
+            String all=prefs.getString("custom_modules","");
+            if(all.length()>0)all+="\n";
+            prefs.edit().putString("custom_modules",all+row).apply();
+            moduleOut.setText("Module added. Return to Dashboard to use it.");
+        });
+        Button clear=btn("Remove all custom modules");
+        clear.setOnClickListener(v->{prefs.edit().remove("custom_modules").apply();moduleOut.setText("Custom modules removed.");});
+        body.addView(name);body.addView(desc);body.addView(url);body.addView(add);body.addView(clear);body.addView(moduleOut);
+
+        body.addView(t("COMPETITIVE BENCHMARK • FELIX PUBLIC FEATURE SNAPSHOT",18,true));
+        body.addView(card("Fund research / comparison","Felix: publicly advertises live research, screening and comparison. Vama: 5-year ROI/risk comparison; verified live feeds still pending."));
+        body.addView(card("AI / portfolio building","Felix: AI portfolio builder and chat. Vama: Digital Twin, Nifty stress matrix, Client Impact Radar and Evidence Mode; live AI/data integration pending."));
+        body.addView(card("Market terminal","Felix: live market terminal. Vama: Market Cockpit and portfolio-impact engine; live feeds pending."));
+        body.addView(card("Clients / leads","Felix: client book and lead tools. Vama: local lead/follow-up workflow now; shared CRM/backend pending."));
+        body.addView(card("Reports / proposals","Felix: branded proposals/reports. Vama: Report Factory and sharing now; automated PDF proposal layer pending."));
+        body.addView(card("Content / sharing","Felix: Share Kit/newsletters. Vama: Share Studio and Smart URL now; automated content/newsletter engine pending."));
+        body.addView(card("Vama depth modules","Portfolio X-Ray • Digital Twin • Nifty stress matrix • Client Impact Radar • Evidence Mode • What Changed?"));
+        body.addView(t("Benchmark is based on publicly advertised capability categories and should be refreshed when Felix changes.",12,false));
+
+        Button change=btn("Change Super Admin password");
+        change.setOnClickListener(v->{prefs.edit().remove("admin_hash").apply();superAdmin();});
+        Button reset=btn("Reset all local Vama data");
+        TextView out=t("",14,false);
+        reset.setOnClickListener(v->{prefs.edit().clear().apply();out.setText("All local settings, follow-ups, modules and password reset.");});
+        body.addView(change);body.addView(reset);body.addView(out);
     }
 
     @Override public void onBackPressed(){ showDashboard(); }
