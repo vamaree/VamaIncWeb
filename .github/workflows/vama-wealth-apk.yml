@@ -8,6 +8,9 @@ on:
       - '.github/workflows/vama-wealth-apk.yml'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -30,6 +33,14 @@ jobs:
         run: gradle --no-daemon assembleDebug
       - name: Rename APK
         run: cp VamaWealthIntelligence/app/build/outputs/apk/debug/app-debug.apk VamaWealthIntelligence.apk
+      - name: Publish APK payload for transfer
+        run: |
+          base64 -w0 VamaWealthIntelligence.apk > VamaWealthIntelligence.apk.b64
+          git config user.name "Vama Build Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add VamaWealthIntelligence.apk.b64
+          git commit -m "Publish Vama Wealth APK payload [skip ci]"
+          git push origin HEAD:vama-wealth-apk-build
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
