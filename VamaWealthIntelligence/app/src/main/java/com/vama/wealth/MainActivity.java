@@ -101,13 +101,13 @@ public class MainActivity extends Activity {
     private void showDashboard(){
         shell("Decision Intelligence Dashboard");
         body.addView(t("Research • X-Ray • Simulate • Explain • Report • Monitor",14,false));
-        body.addView(card("BUILD 2 — FUNCTIONAL LOCAL TOOLS","Live market/fund feeds are intentionally not fabricated. Calculators work with your inputs."));
+        body.addView(card("BUILD 3 — 5-YEAR ROI + NIFTY SCENARIOS","Live market/fund feeds are intentionally not fabricated. Calculators work with your inputs."));
         addModule("Clients","Add and track local client count/value.",()->clients());
         addModule("MF Research Lab","Analyze user-entered fund metrics.",()->researchLab());
-        addModule("Compare Funds","Compare two funds using the same inputs.",()->compareFunds());
+        addModule("5-Year ROI Compare","Compare Fund A, Fund B and Nifty 50 over 5 years.",()->compareFunds());
+        addModule("NIFTY % UP / DOWN","Test +5%, +10%, +20%, -5%, -10% and -20% Nifty scenarios.",()->stressTest());
         addModule("Portfolio X-Ray","Measure concentration from portfolio weights.",()->portfolioXray());
         addModule("Digital Twin","Compare current vs target allocation scenarios.",()->digitalTwin());
-        addModule("Stress Test","Apply equity/debt shock scenarios.",()->stressTest());
         addModule("Goals & SIP","SIP future-value illustration.",()->goalCalc());
         addModule("Vama AI / Evidence Mode","Build a traceable evidence record.",()->evidenceMode());
         addModule("What Changed?","Calculate before/after changes.",()->whatChanged());
@@ -176,23 +176,54 @@ public class MainActivity extends Activity {
     }
 
     private void compareFunds(){
-        shell("Compare Funds"); back();
+        shell("5-Year ROI Compare"); back();
+        body.addView(t("Compare Fund A, Fund B and Nifty 50 for the same 5-year investment period.",14,false));
+
+        EditText investment=input("Starting investment ₹",true);
         section("Fund A");
-        EditText aName=textInput("Fund A name"); EditText aRet=input("A: 3Y CAGR %",true); EditText aVol=input("A: volatility %",true); EditText aExp=input("A: expense %",true);
+        EditText aName=textInput("Fund A name");
+        EditText aCagr=input("Fund A: 5-year CAGR %",true);
+
         section("Fund B");
-        EditText bName=textInput("Fund B name"); EditText bRet=input("B: 3Y CAGR %",true); EditText bVol=input("B: volatility %",true); EditText bExp=input("B: expense %",true);
-        TextView out=t("",15,false); Button go=btn("Compare");
+        EditText bName=textInput("Fund B name");
+        EditText bCagr=input("Fund B: 5-year CAGR %",true);
+
+        section("Nifty 50 benchmark");
+        EditText nCagr=input("Nifty 50: 5-year CAGR %",true);
+
+        TextView out=t("",16,false);
+        Button go=btn("Compare 5-year ROI");
         go.setOnClickListener(v->{
             try{
-                double ar=val(aRet),av=val(aVol),ae=val(aExp),br=val(bRet),bv=val(bVol),be=val(bExp);
+                double principal=val(investment);
+                double ar=val(aCagr)/100.0, br=val(bCagr)/100.0, nr=val(nCagr)/100.0;
                 String an=aName.getText().toString().trim(); if(an.length()==0)an="Fund A";
                 String bn=bName.getText().toString().trim(); if(bn.length()==0)bn="Fund B";
-                out.setText(an+" — CAGR "+ar+"%, volatility "+av+"%, expense "+ae+"%, return/vol "+String.format(Locale.US,"%.2f",av==0?0:ar/av)+"\n\n"+
-                        bn+" — CAGR "+br+"%, volatility "+bv+"%, expense "+be+"%, return/vol "+String.format(Locale.US,"%.2f",bv==0?0:br/bv)+"\n\n"+
-                        "Differences (A − B): CAGR "+String.format(Locale.US,"%.2f",ar-br)+" pts, volatility "+String.format(Locale.US,"%.2f",av-bv)+" pts, expense "+String.format(Locale.US,"%.2f",ae-be)+" pts.\nNo winner is declared; this is an evidence comparison.");
-            }catch(Exception e){out.setText("Enter all six numeric metrics.");}
+
+                double av=principal*Math.pow(1+ar,5);
+                double bv=principal*Math.pow(1+br,5);
+                double nv=principal*Math.pow(1+nr,5);
+
+                double aroi=(av/principal-1)*100.0;
+                double broi=(bv/principal-1)*100.0;
+                double nroi=(nv/principal-1)*100.0;
+
+                out.setText(
+                    "5-YEAR COMPARISON\n\n"+
+                    an+"\nFinal value: "+money(av)+"\n5Y cumulative ROI: "+String.format(Locale.US,"%.2f",aroi)+"%\n\n"+
+                    bn+"\nFinal value: "+money(bv)+"\n5Y cumulative ROI: "+String.format(Locale.US,"%.2f",broi)+"%\n\n"+
+                    "Nifty 50\nFinal value: "+money(nv)+"\n5Y cumulative ROI: "+String.format(Locale.US,"%.2f",nroi)+"%\n\n"+
+                    "Fund A vs Nifty: "+money(av-nv)+"\nFund B vs Nifty: "+money(bv-nv)+"\n\n"+
+                    "Inputs are user-entered. Live 5-year fund/Nifty data is not yet connected."
+                );
+            }catch(Exception e){out.setText("Enter starting investment and all three 5-year CAGR values.");}
         });
-        body.addView(aName);body.addView(aRet);body.addView(aVol);body.addView(aExp);body.addView(bName);body.addView(bRet);body.addView(bVol);body.addView(bExp);body.addView(go);body.addView(out);
+
+        body.addView(investment);
+        body.addView(aName);body.addView(aCagr);
+        body.addView(bName);body.addView(bCagr);
+        body.addView(nCagr);
+        body.addView(go);body.addView(out);
     }
 
     private void portfolioXray(){
@@ -237,25 +268,74 @@ public class MainActivity extends Activity {
     }
 
     private void stressTest(){
-        shell("Stress Test"); back();
+        shell("NIFTY % UP / DOWN"); back();
+        body.addView(t("Quick Nifty scenario calculator",18,true));
+        body.addView(t("This is a scenario tool, not a live Nifty quote. Enter the portfolio and equity allocation, then choose a Nifty move.",13,false));
+
         EditText value=input("Portfolio value ₹",true);
         EditText equity=input("Equity allocation %",true);
-        EditText debt=input("Debt allocation %",true);
-        EditText eqShock=input("Equity shock % (example -20)",true);
-        EditText debtShock=input("Debt shock % (example -2)",true);
-        TextView out=t("",17,true); Button go=btn("Run stress test");
-        go.setOnClickListener(v->{
-            try{
-                double pv=val(value),e=val(equity),d=val(debt),es=val(eqShock),ds=val(debtShock);
-                if(e<0||d<0||e+d>100)throw new Exception();
-                double other=100-e-d;
-                double impact=pv*((e/100.0)*(es/100.0)+(d/100.0)*(ds/100.0));
-                double stressed=pv+impact;
-                double pct=pv==0?0:(impact/pv*100.0);
-                out.setText("Stressed value: "+money(stressed)+"\nImpact: "+money(impact)+" ("+String.format(Locale.US,"%.2f",pct)+"%)\nUnshocked/other allocation: "+String.format(Locale.US,"%.1f",other)+"%\n\nScenario only; no forecast or guarantee.");
-            }catch(Exception e){out.setText("Enter valid allocations and shock percentages.");}
+        EditText move=input("Custom Nifty move %",true);
+        TextView out=t("",17,true);
+
+        final double[] selected={0.0};
+
+        Button down20=btn("Nifty -20%");
+        Button down10=btn("Nifty -10%");
+        Button down5=btn("Nifty -5%");
+        Button up5=btn("Nifty +5%");
+        Button up10=btn("Nifty +10%");
+        Button up20=btn("Nifty +20%");
+        Button custom=btn("Use custom Nifty %");
+
+        View.OnClickListener preset=v->{
+            if(v==down20) selected[0]=-20;
+            else if(v==down10) selected[0]=-10;
+            else if(v==down5) selected[0]=-5;
+            else if(v==up5) selected[0]=5;
+            else if(v==up10) selected[0]=10;
+            else if(v==up20) selected[0]=20;
+            runNiftyScenario(value,equity,selected[0],out);
+        };
+
+        down20.setOnClickListener(preset);
+        down10.setOnClickListener(preset);
+        down5.setOnClickListener(preset);
+        up5.setOnClickListener(preset);
+        up10.setOnClickListener(preset);
+        up20.setOnClickListener(preset);
+
+        custom.setOnClickListener(v->{
+            try{ runNiftyScenario(value,equity,val(move),out); }
+            catch(Exception e){ out.setText("Enter a valid custom Nifty percentage."); }
         });
-        body.addView(value);body.addView(equity);body.addView(debt);body.addView(eqShock);body.addView(debtShock);body.addView(go);body.addView(out);
+
+        body.addView(value);body.addView(equity);
+        body.addView(t("Nifty DOWN scenarios",16,true));
+        body.addView(down5);body.addView(down10);body.addView(down20);
+        body.addView(t("Nifty UP scenarios",16,true));
+        body.addView(up5);body.addView(up10);body.addView(up20);
+        body.addView(t("Custom Nifty move",16,true));
+        body.addView(move);body.addView(custom);body.addView(out);
+    }
+
+    private void runNiftyScenario(EditText value, EditText equity, double niftyMove, TextView out){
+        try{
+            double pv=val(value), e=val(equity);
+            if(e<0||e>100) throw new Exception();
+            double impactPct=(e/100.0)*niftyMove;
+            double impact=pv*impactPct/100.0;
+            double stressed=pv+impact;
+            out.setText(
+                "Nifty scenario: "+String.format(Locale.US,"%+.1f",niftyMove)+"%\n"+
+                "Equity allocation: "+String.format(Locale.US,"%.1f",e)+"%\n"+
+                "Portfolio impact: "+String.format(Locale.US,"%+.2f",impactPct)+"%\n"+
+                "Value change: "+money(impact)+"\n"+
+                "Scenario portfolio value: "+money(stressed)+"\n\n"+
+                "Assumption: equity portion moves 1-for-1 with Nifty (beta 1); non-equity portion unchanged."
+            );
+        }catch(Exception e1){
+            out.setText("Enter valid portfolio value and equity allocation.");
+        }
     }
 
     private void goalCalc(){
@@ -344,7 +424,7 @@ public class MainActivity extends Activity {
     private void superAdmin(){
         shell("Super Admin"); back();
         int count=prefs.getInt("client_count",0);
-        body.addView(card("App","Vama Wealth Intelligence Build 2 • Android 6/API 23+"));
+        body.addView(card("App","Vama Wealth Intelligence Build 3 • Android 6/API 23+"));
         body.addView(card("Verified live data","Not connected — prevents fabricated NAV/market values."));
         body.addView(card("Local client records",String.valueOf(count)));
         Button reset=btn("Reset local client demo data");
