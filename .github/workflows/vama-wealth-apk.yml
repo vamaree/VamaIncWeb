@@ -1,0 +1,35 @@
+name: Build Vama Wealth APK
+
+on:
+  push:
+    branches: [vama-wealth-apk-build]
+    paths:
+      - 'VamaWealthIntelligence/**'
+      - '.github/workflows/vama-wealth-apk.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Build APK
+        working-directory: VamaWealthIntelligence
+        run: gradle --no-daemon assembleDebug
+      - name: Rename APK
+        run: cp VamaWealthIntelligence/app/build/outputs/apk/debug/app-debug.apk VamaWealthIntelligence.apk
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: VamaWealthIntelligence-APK
+          path: VamaWealthIntelligence.apk
+          if-no-files-found: error
+          retention-days: 14
