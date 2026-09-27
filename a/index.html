@@ -1,6 +1,13 @@
 <!doctype html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<title>AbM</title>
+<title>Taste the Moment | @AbM</title>
+<meta name="description" content="Tap to explore a playful interactive collection of nostalgic sweets and snacks.">
+<meta property="og:title" content="Taste the Moment | @AbM">
+<meta property="og:description" content="Tap to explore a playful interactive collection of nostalgic sweets and snacks.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://taste.letyourworld.in/">
+<meta name="twitter:card" content="summary">
+<meta name="theme-color" content="#000000">
 <style>
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000}
 iframe{border:0;width:100%;height:100%;display:block;background:#000}
@@ -54,10 +61,10 @@ else{
   const q = new URLSearchParams(location.search);
   const payload = {
     short_code: "abmfood",
-    utm_source: q.get("utm_source") || "",
-    utm_medium: q.get("utm_medium") || "",
-    utm_campaign: q.get("utm_campaign") || "",
-    utm_content: q.get("utm_content") || "",
+    utm_source: q.get("utm_source") || "whatsapp",
+    utm_medium: q.get("utm_medium") || "client_share",
+    utm_campaign: q.get("utm_campaign") || "abm_food_gallery",
+    utm_content: q.get("utm_content") || "taste_link",
     utm_term: q.get("utm_term") || "",
     referrer: document.referrer || "",
     platform: navigator.platform || ""
