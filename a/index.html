@@ -48,4 +48,26 @@ else{
     d.addEventListener("selectstart",e=>{e.preventDefault();e.stopPropagation();},true);
   });
 }
-</script></body></html>
+</script>
+<script>
+(() => {
+  const q = new URLSearchParams(location.search);
+  const payload = {
+    short_code: "abmfood",
+    utm_source: q.get("utm_source") || "",
+    utm_medium: q.get("utm_medium") || "",
+    utm_campaign: q.get("utm_campaign") || "",
+    utm_content: q.get("utm_content") || "",
+    utm_term: q.get("utm_term") || "",
+    referrer: document.referrer || "",
+    platform: navigator.platform || ""
+  };
+  fetch("https://ntbaqczdutyekggnisuw.supabase.co/functions/v1/track-abm-click", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify(payload),
+    keepalive: true
+  }).catch(() => {});
+})();
+</script>
+</body></html>
