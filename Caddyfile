@@ -1,0 +1,14 @@
+:8080 {
+    @short path /q/*
+    handle @short {
+        reverse_proxy https://vama-smart-qr-web-production.up.railway.app {
+            header_up Host vama-smart-qr-web-production.up.railway.app
+        }
+    }
+
+    handle {
+        root * .
+        try_files {path} /index.html
+        file_server
+    }
+}
